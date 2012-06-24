@@ -23,14 +23,16 @@ $cs->registerCssFile($baseUrl.'/css/base.css');
         </ul> 
 </div> 
  
-    <?php 
-        $message=Yii::app()->user->getFlash('flashMessage');
-        if ($message): 
-    ?> 
-    <ul class="messagelist">
-        <li><?php echo $message; ?></li>
-    </ul>
-    <?php endif; ?>
+<?php
+$flashMessages = Yii::app()->user->getFlashes();
+if ($flashMessages) {
+    echo '<ul class="messagelist">';
+    foreach($flashMessages as $key => $message) {
+        echo '<li><div class="flash-' . $key . '">' . $message . "</div></li>\n";
+    }
+    echo '</ul>';
+}
+?>
 
     <!-- BREADCRUMBS --> 
     <div id="breadcrumbs">
