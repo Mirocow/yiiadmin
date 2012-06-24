@@ -68,9 +68,11 @@
         <li class="submit-button-container">
             <input type="submit" value="<?php echo YiiadminModule::t('Сохранить и создать новую запись');?>" name="_addanother">
         </li>
+        <?php/*
         <li class="submit-button-container">
             <input type="submit" value="<?php echo YiiadminModule::t('Сохранить и редактировать');?>" name="_continue">
         </li> 
+        */?>
     </ul
     ><br clear="all">
 </div>
