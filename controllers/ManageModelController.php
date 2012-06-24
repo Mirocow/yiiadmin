@@ -112,8 +112,8 @@ class ManageModelController extends YAdminController
 
             if ($model->validate())
             {
-                $model->save();
-                Yii::app()->user->setFlash('flashMessage', YiiadminModule::t('Запись создана.'));
+                if($model->save())
+                  Yii::app()->user->setFlash('flashMessage', YiiadminModule::t('Запись создана.'));
                 $this->redirectUser($model_name,$primaryKey);
             }
         }
