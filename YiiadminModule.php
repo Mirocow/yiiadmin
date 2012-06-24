@@ -12,22 +12,22 @@
  */
 class YiiadminModule extends CWebModule
 {
-    private $_assetsUrl;
-    protected $model;
-    public $attributesWidgets=null;
-    public $_modelsList=array();
-    public static $fileExt='.php';
-    private $controller;
-    public $password;   
-    public $registerModels=array();
-    public $excludeModels=array();
+  private $_assetsUrl;
+  protected $model;
+  public $attributesWidgets=null;
+  public $_modelsList=array();
+  public static $fileExt='.php';
+  private $controller;
+  public $password;   
+  public $registerModels=array();
+  public $excludeModels=array();
 
 	public function init()
 	{
-        error_reporting(E_ALL ^ E_NOTICE);
-        Yii::app()->clientScript->registerCoreScript('jquery');
+    error_reporting(E_ALL ^ E_NOTICE);
+    Yii::app()->clientScript->registerCoreScript('jquery');
 
-        Yii::app()->setComponents(array(
+    Yii::app()->setComponents(array(
 			'errorHandler'=>array(
 				'errorAction'=>'yiiadmin/default/error',
 			),
@@ -41,217 +41,233 @@ class YiiadminModule extends CWebModule
 		$this->setImport(array(
 			'yiiadmin.models.*',
 			'yiiadmin.components.*',
-            'zii.widgets.grid.CGridColumn',
+      'zii.widgets.grid.CGridColumn',
 		));
 	}
 
-    /**
-     * Получение списка моделей
-     * 
-     * @access public
-     * @return void
-     */
-    public function getModelsList()
-    {
-        $models=$this->registerModels;
-    
-        if (!empty($models))
-        {
-            foreach($models as $model)
-            {
-                // Импорт всех моделей(модели)
-                Yii::import($model);
+  /**
+   * Получение списка моделей
+   * 
+   * @access public
+   * @return void
+   */
+  public function getModelsList()
+  {
+      $models=$this->registerModels;
+  
+      if (!empty($models))
+      {
+          foreach($models as $model)
+          {
+              // Импорт всех моделей(модели)
+              Yii::import($model);
 
-                if (substr($model, -1)=='*')
-                {
-                    // Если импортируем директорию с моделями,
-                    // Получим список моделей
-                    $files=CFileHelper::findFiles(Yii::getPathOfAlias($model));
-                    if ($files)
-                    {
-                        foreach($files as $file)
-                        {
-                           $class_name=str_replace(self::$fileExt,'',substr(strrchr($file,DIRECTORY_SEPARATOR), 1));
-                           $this->addModel($class_name);
-                        }
-                    }
-                }
-                else
-                {
-                    $class_name=substr(strrchr($model, "."), 1);
-                    $this->addModel($class_name); 
-                }
+              if (substr($model, -1)=='*')
+              {
+                  // Если импортируем директорию с моделями,
+                  // Получим список моделей
+                  $files=CFileHelper::findFiles(Yii::getPathOfAlias($model));
+                  if ($files)
+                  {
+                      foreach($files as $file)
+                      {
+                         $class_name=str_replace(self::$fileExt,'',substr(strrchr($file,DIRECTORY_SEPARATOR), 1));
+                         $this->addModel($class_name);
+                      }
+                  }
+              }
+              else
+              {
+                  $class_name=substr(strrchr($model, "."), 1);
+                  $this->addModel($class_name); 
+              }
+          }
+      }
+
+      return array_unique($this->_modelsList);
+  }
+
+  /**
+   * Добавление модели в список.
+   * 
+   * @param mixed $name 
+   * @access protected
+   * @return void
+   */
+  protected function addModel($name)
+  {
+      if (!in_array($name,$this->excludeModels))
+          $this->_modelsList[]=$name;
+  }
+
+  /**
+   * Загрузка модели
+   * 
+   * @param string $name 
+   * @access public
+   * @return object
+   */
+  public function loadModel($model_name)
+  {
+      $model=(string)$model_name;
+      $this->model=new $model;
+      return $this->model;
+  }
+
+  public function createWidget($form,$model,$attribute)
+  {
+      $dbType=$model->tableSchema->columns[$attribute]->dbType;
+      
+      $widget=$this->getAttributeWidget($attribute); 
+      $attributes=$this->getAttributeData($attribute);
+      
+      switch ($widget)
+      {
+          case 'textArea';
+            if($attributes){
+              $widgetData=array_slice($attributes,2);
+              $data = array('class'=>'vTextField');
+              $data=array_merge($data,$widgetData);          
             }
-        }
-
-        return array_unique($this->_modelsList);
-    }
-
-    /**
-     * Добавление модели в список.
-     * 
-     * @param mixed $name 
-     * @access protected
-     * @return void
-     */
-    protected function addModel($name)
-    {
-        if (!in_array($name,$this->excludeModels))
-            $this->_modelsList[]=$name;
-    }
-
-    /**
-     * Загрузка модели
-     * 
-     * @param string $name 
-     * @access public
-     * @return object
-     */
-    public function loadModel($name)
-    {
-        $model=(string)$_GET['model_name'];
-        $this->model=new $model;
-        return $this->model;
-    }
-
-    public function createWidget($form,$model,$attribute)
-    {
-        $dbType=$model->tableSchema->columns[$attribute]->dbType;
-        
-        $widget=$this->getAttributeWidget($attribute); 
-        
-        switch ($widget)
-        {
-            case 'textArea';
-                return $form->textArea($model,$attribute,array('class'=>'vTextField'));
-            break;
-            
-            case 'textField';
-                return $form->textField($model,$attribute,array('class'=>'vTextField'));
-            break;
-
-            case 'dropDownList':
-                return $form->dropDownList($model,$attribute,$this->getAttributeChoices($attribute),array('empty'=>'- select -'));
-            break;
-
-            case 'calendar': 
-                $widgetData=array_slice($this->getAttributeData($attribute),2);
-                
-                $data=array(
-                    'name'=>get_class($model).'['.$attribute.']',
-                    'value'=>$model->$attribute,
-                    'language'=>'ru',
-                    'options'=>array(
-                        'showAnim'=>'fold',
-                        'dateFormat'=>'yy-mm-dd',
-                    ),
-                );
-                
-                if ($widgetData)
-                    $data=array_merge($data,$widgetData);
-
-                $this->controller->widget('zii.widgets.jui.CJuiDatePicker', $data);
-            break;
-
-            case 'boolean':
-                return $form->checkBox($model,$attribute); 
-            break;
-
-            default: 
-                return $form->textField($model,$attribute,array('class'=>'vTextField')); 
-            break;
-        }
-    }
-
-    protected function getAttributeWidget($name)
-    {
-        if ($this->attributesWidgets!==null)
-        {
-            if (isset($this->attributesWidgets->$name))
-                return $this->attributesWidgets->$name;
-            else
-            {
-                $dbType=$this->model->tableSchema->columns[$name]->dbType; 
-                if ($dbType=='text')
-                    return 'textArea';
-                else
-                    return 'textField';
+            return $form->textArea($model,$attribute,$data);
+          break;
+          
+          case 'textField';
+            if($attributes){
+              $widgetData=array_slice($attributes,2);
+              $data = array('class'=>'vTextField');
+              $data=array_merge($data,$widgetData);
             }
-        }
+            return $form->textField($model,$attribute,$data);
+          break;
 
-        if (method_exists($this->model,'attributeWidgets'))
-            $attributeWidgets=$this->model->attributeWidgets();
-        else
-            return null;
+          case 'dropDownList':
+              return $form->dropDownList($model,$attribute,$this->getAttributeChoices($attribute),array('empty'=>'- select -'));
+          break;
 
-        $temp=array();
+          case 'calendar':
+            if($attributes) 
+              $widgetData=array_slice($attributes,2);
+              
+              $data=array(
+                  'name'=>get_class($model).'['.$attribute.']',
+                  'value'=>$model->$attribute,
+                  'language'=>'ru',
+                  'options'=>array(
+                      'showAnim'=>'fold',
+                      'dateFormat'=>'yy-mm-dd',
+                  ),
+              );
+              
+              if ($widgetData)
+                  $data=array_merge($data,$widgetData);
 
-        if (!empty($attributeWidgets))
-        {
-            foreach($attributeWidgets as $key=>$val)
-            {
-                if (isset($val[0]) && isset($val[1]))
-                {
-                    $temp[$val[0]]=$val[1];
-                    $temp[$val[0].'Data']=$val;
-                }
-            }
-        }
+              $this->controller->widget('zii.widgets.jui.CJuiDatePicker', $data);
+          break;
 
-        $this->attributesWidgets=(object)$temp;
+          case 'boolean':
+              return $form->checkBox($model,$attribute); 
+          break;
+          
+          case 'label':
+              return $form->label($model,$attribute);
+          break;
 
-        return $this->getAttributeWidget($name);
-    }
+          default: 
+              return $form->textField($model,$attribute,array('class'=>'vTextField')); 
+          break;
+      }
+  }
 
-    protected function getAttributeData($attribute)
-    {
-        $attribute.='Data';
-        if (isset($this->attributesWidgets->$attribute))
-            return $this->attributesWidgets->$attribute;
-        else
-            return null;
-    }
+  protected function getAttributeWidget($name)
+  {
+      if ($this->attributesWidgets!==null)
+      {
+          if (isset($this->attributesWidgets->$name))
+              return $this->attributesWidgets->$name;
+          else
+          {
+              $dbType=$this->model->tableSchema->columns[$name]->dbType; 
+              if ($dbType=='text')
+                  return 'textArea';
+              else
+                  return 'textField';
+          }
+      }
 
-    /**
-     * Получение массива значений атрибута.
-     * Имя переменной массива с значениями должно быть: attributeNameChoices. 
-     * Например categoryChoices.
-     * 
-     * @param mixed $attribute 
-     * @access private
-     * @return array
-     */
-    private function getAttributeChoices($attribute)
-    {
-        $data=array();
-        $choicesName=(string)$attribute.'Choices';
+      if (method_exists($this->model,'attributeWidgets'))
+          $attributeWidgets=$this->model->attributeWidgets();
+      else
+          return null;
+
+      $temp=array();
+
+      if (!empty($attributeWidgets))
+      {
+          foreach($attributeWidgets as $key=>$val)
+          {
+              if (isset($val[0]) && isset($val[1]))
+              {
+                  $temp[$val[0]]=$val[1];
+                  $temp[$val[0].'Data']=$val;
+              }
+          }
+      }
+
+      $this->attributesWidgets=(object)$temp;
+
+      return $this->getAttributeWidget($name);
+  }
+
+  protected function getAttributeData($attribute)
+  {
+      $attribute.='Data';
+      if (isset($this->attributesWidgets->$attribute))
+          return $this->attributesWidgets->$attribute;
+      else
+          return null;
+  }
+
+  /**
+   * Получение массива значений атрибута.
+   * Имя функции, возращающая массив, должно быть: attributeNameChoices(). 
+   * Например categoryChoices.
+   * 
+   * @param mixed $attribute 
+   * @access private
+   * @return array
+   */
+  private function getAttributeChoices($attribute)
+  {
+      $data=array();
+      $choicesName=(string)$attribute.'Choices';
         if (isset($this->model->$choicesName) && is_array($this->model->$choicesName))
             $data=$this->model->$choicesName;
         
-        return $data;
-    }
+      return $data;
+  }
 
-    public function getModelNamePlural($model)
-    {
-        if (is_string($model))
-            $model=new $model;
+  public function getModelNamePlural($model)
+  {
+      if (is_string($model))
+          $model=new $model;
 
-        if (isset($model->adminName))
-            return $model->adminName;
-        else
-            return get_class($model);
-    }
+      if (isset($model->adminName))
+          return $model->adminName;
+      else
+          return get_class($model);
+  }
 
-    public function getObjectPluralName($model, $pos=0)
-    {
-        if (is_string($model))
-            $model=new $model; 
+  public function getObjectPluralName($model, $pos=0)
+  {
+      if (is_string($model))
+          $model=new $model; 
 
-        if (!isset($model->pluralNames))
-            return get_class($model);
-        else
-            return $model->pluralNames[$pos];
-    }
+      if (!isset($model->pluralNames))
+          return get_class($model);
+      else
+          return $model->pluralNames[$pos];
+  }
 
 	/**
 	 * @return string the base URL that contains all published asset files.
@@ -271,22 +287,22 @@ class YiiadminModule extends CWebModule
 		$this->_assetsUrl=$value;
 	}
 
-    public static function createActionUrl($action,$pk)
-    {
-        $a=new CController;
-        return $a->createUrl('manageModel',$data->primaryKey);
-    }
+  public static function createActionUrl($action,$pk)
+  {
+      $a=new CController;
+      return $a->createUrl('manageModel',$data->primaryKey);
+  }
 
-    public static function t($message)
-    {
-        return Yii::t('YiiadminModule.yiiadmin',$message);
-    }
+  public static function t($message)
+  {
+      return Yii::t('YiiadminModule.yiiadmin',$message);
+  }
 
 	public function beforeControllerAction($controller, $action)
 	{
 		if(parent::beforeControllerAction($controller, $action))
 		{
-            $this->controller=$controller;
+      $this->controller=$controller;
 			$route=$controller->id.'/'.$action->id;
 
 			$publicPages=array(
