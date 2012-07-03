@@ -7,9 +7,11 @@
             $cs->registerScriptFile($this->module->assetsUrl.'/widget_plugins/'.$plugin);
     }*/   
 
-    foreach ($model->attributeWidgets() as $attribute => $options)
+    foreach ($model->attributeWidgets() as $attributes)
     {
-        $attr_string.=$attribute.',';
+      $attribute = array_shift($attributes);
+      $options = $attributes;         
+      $attr_string.=$attribute.',';
     }
     
     // TODO: unset primaryKey;
