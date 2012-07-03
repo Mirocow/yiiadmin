@@ -123,16 +123,79 @@ class YiiadminModule extends CWebModule
       
       switch ($widget)
       {
-          case 'textArea';
+          case 'textArea':
             if($attributes){
               $widgetData=array_slice($attributes,2);
               $data = array('class'=>'vTextField');
               $data=array_merge($data,$widgetData);          
             }
+            
+            if(isset($data['wysiwyg']) && $data['wysiwyg']){
+            
+              $cs=Yii::app()->getClientScript();
+              
+              //$cs->registerScriptFile($this->module->assetsUrl.'/tinymce/jscripts/tiny_mce/tiny_mce.js');
+              //$cs->registerScriptFile($this->module->assetsUrl.'/tinymce/jscripts/tiny_mce/jquery.tinymce.js'); 
+              //$cs->registerScriptFile($this->module->assetsUrl.'/tinymce_setup/tinymce_setup.js');
+              
+              $cs->registerScriptFile($this->assetsUrl.'/redactor/redactor/redactor.js');
+              $cs->registerCssFile($this->assetsUrl.'/redactor/redactor/css/redactor.css');
+              
+              $id = get_class($model).'_'.$attribute;
+              
+              // http://redactorjs.com/docs/toolbar/
+              $buttons = array(
+                'html', '|', 
+                //'formatting', '|', 
+                'bold', 'italic', 'deleted', '|',
+                'unorderedlist', 'orderedlist', 'outdent', 'indent', '|',
+                //'image', 'video', 'file', 'table', 'link', '|',
+                'fontcolor', 'backcolor', '|', 
+                'alignleft', 'aligncenter', 'alignright', 'justify', '|',
+                //'horizontalrule', 'fullscreen'            
+              );
+              
+              // http://redactorjs.com/docs/settings/
+              $options = array(
+                //"css: 'docstyle.css'",
+                //"css: 'wym.css'", 
+                "autoresize: true", 
+                "fixed: true",
+                "lang: 'ru'",
+                "overlay: true",
+                //"xhtml: true",
+                "autoformat: false",
+                
+                // http://redactorjs.com/docs/images/
+                //"imageUpload: '/image_upload.php'", 
+                //"imageUploadCallback: function(obj, json) { … }",
+                
+                // http://redactorjs.com/docs/files/
+                //"fileUpload: '/file_upload.php'",
+                //"fileUploadCallback: function(obj, json) { … }",
+                
+                //"callback: function(obj) { … }",
+                //"keyupCallback: function(obj, event) { … }",
+                //"keydownCallback: function(obj, event) { … }",
+                //"execCommandCallback: function(obj, command) { … }",
+                
+                "buttons: ['".implode("','",$buttons)."']",
+                
+                //"autosave: '/save.php'", "interval: 120", 
+              );
+              
+              $cs->registerScript(
+                'js-redactor', 
+                "$('#$id').redactor({".implode(',', $options)."});",
+                CClientScript::POS_END
+              );
+              
+            }
+                         
             return $form->textArea($model,$attribute,$data);
           break;
           
-          case 'textField';
+          case 'textField':
             if($attributes){
               $widgetData=array_slice($attributes,2);
               $data = array('class'=>'vTextField');
@@ -241,8 +304,8 @@ class YiiadminModule extends CWebModule
   {
       $data=array();
       $choicesName=(string)$attribute.'Choices';
-        if (isset($this->model->$choicesName) && is_array($this->model->$choicesName))
-            $data=$this->model->$choicesName;
+      if (isset($this->model->$choicesName) && is_array($this->model->$choicesName))
+          $data=$this->model->$choicesName;
         
       return $data;
   }
