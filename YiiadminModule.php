@@ -41,7 +41,8 @@ class YiiadminModule extends CWebModule
 		$this->setImport(array(
 			'yiiadmin.models.*',
 			'yiiadmin.components.*',
-      'zii.widgets.grid.CGridColumn',
+      //'yiiadmin.actions.*',
+      'zii.widgets.grid.CGridColumn',      
 		));
 	}
 
@@ -120,12 +121,12 @@ class YiiadminModule extends CWebModule
       
       $widget=$this->getAttributeWidget($attribute); 
       $attributes=$this->getAttributeData($attribute);
+      $widgetData=array_slice($attributes,2);
       
       switch ($widget)
       {
           case 'textArea':
-            if($attributes){
-              $widgetData=array_slice($attributes,2);
+            if($attributes){              
               $data = array('class'=>'vTextField');
               $data=array_merge($data,$widgetData);          
             }
@@ -205,7 +206,11 @@ class YiiadminModule extends CWebModule
           break;
 
           case 'dropDownList':
-              return $form->dropDownList($model,$attribute,$this->getAttributeChoices($attribute),array('empty'=>'- select -'));
+              if(count($widgetData))
+                $callback_name = $widgetData[0];
+              else
+                $callback_name = '';
+              return $form->dropDownList($model,$attribute,$this->getAttributeChoices($attribute, $callback_name),array('empty'=>'- select -'));
           break;
 
           case 'calendar':
@@ -300,14 +305,15 @@ class YiiadminModule extends CWebModule
    * @access private
    * @return array
    */
-  private function getAttributeChoices($attribute)
+  private function getAttributeChoices($attribute, $callback_function = '')
   {
       $data=array();
-      $choicesName=(string)$attribute.'Choices';
-      if (isset($this->model->$choicesName) && is_array($this->model->$choicesName))
-          $data=$this->model->$choicesName;
-        
-      return $data;
+      if(!$callback_function)
+        $callback_function=(string)$attribute.'Choices';
+      if (method_exists($this->model, $callback_function))
+        if($data = $this->model->$callback_function())
+          if(is_array($data))
+            return $data;
   }
 
   public function getModelNamePlural($model)

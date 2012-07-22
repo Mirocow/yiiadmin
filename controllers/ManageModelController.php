@@ -94,83 +94,14 @@ class ManageModelController extends YAdminController
         ));
     }
 
-    /**
-     * Создание новой записи.
-     * 
-     * @access public
-     * @return void
-     */
-    public function actionCreate()
-    {
-        $model_name=(string)$_GET['model_name']; 
-        $model=$this->module->loadModel($model_name);
-
-        if (Yii::app()->request->isPostRequest)
-        {
-            if (isset($_POST[$model_name]))
-                $model->attributes=$_POST[$model_name];
-
-            if ($model->validate())
-            {
-                if($model->save())
-                  Yii::app()->user->setFlash('flashMessage', YiiadminModule::t('Запись создана.'));
-                $this->redirectUser($model_name,$primaryKey);
-            }
-        }
-
-        $title=YiiadminModule::t( 'Создать').' '.$this->module->getObjectPluralName($model, 0); 
-        $this->breadcrumbs=array(
-                $this->module->getModelNamePlural($model)=>$this->createUrl('manageModel/list',array('model_name'=>$model_name)),
-                $title
+    public function actions()
+    {  
+      return array(
+            'create'=>'yiiadmin.actions.Create',
+            'delete'=>'yiiadmin.actions.Delete',
+            'update'=>'yiiadmin.actions.Update',
         );
-
-        $this->render('create',array(
-            'title'=>$title,
-            'model'=>$model,            
-        ));
-    }
-
-    public function actionUpdate()
-    {
-        $model_name=(string)$_GET['model_name']; 
-        $model=$this->module->loadModel($model_name)->findByPk($_GET['pk']);
-
-        if (Yii::app()->request->isPostRequest)
-        {
-            if (isset($_POST[$model_name]))
-                $model->attributes=$_POST[$model_name]; 
-
-            if ($model->validate())
-            {
-                $model->save();
-                Yii::app()->user->setFlash('flashMessage', YiiadminModule::t('Изменения сохранены.'));
-                $this->redirectUser($model_name,$model->primaryKey);
-            }
-        }
-
-        $title=YiiadminModule::t( 'Редактировать').' '.$this->module->getObjectPluralName($model, 0); 
-        $this->breadcrumbs=array(
-                $this->module->getModelNamePlural($model)=>$this->createUrl('manageModel/list',array('model_name'=>$model_name)),
-                $title
-        );
-
-        $this->render('create',array(
-            'title'=>YiiadminModule::t( 'Редактировать').' '.$this->module->getObjectPluralName($model, 0),
-            'model'=>$model,            
-        ));
-    }
-
-    public function actionDelete()
-    {
-        $model_name=(string)$_GET['model_name']; 
-        $model=$this->module->loadModel($model_name)->findByPk($_GET['pk']);
-
-        if ($model!==null)
-        {
-            $model->delete();
-            $this->redirect($this->createUrl('manageModel/list',array('model_name'=>$model_name)));
-        }
-    }
+    }    
 
     /**
      * Redirect after editing model data.
@@ -180,15 +111,16 @@ class ManageModelController extends YAdminController
      * @access protected
      * @return void
      */
-    protected function redirectUser($model_name,$pk)
+    public function redirectUser($model_name,$pk)
     {
         if ($_POST['_save'])
-            $this->redirect($this->createUrl('manageModel/list',array('model_name'=>$model_name)));  
-        if ($_POST['_addanother'])
-        {
+            $this->redirect($this->createUrl('manageModel/list',array('model_name'=>$model_name)));
+              
+        if ($_POST['_addanother']){
             Yii::app()->user->setFlash('flashMessage', YiiadminModule::t('Изменения сохранены. Можете создать новую запись.')); 
             $this->redirect($this->createUrl('manageModel/create',array('model_name'=>$model_name)));
         }
+        
         if ($_POST['_continue'])
             $this->redirect($this->createUrl('manageModel/update',array('model_name'=>$model_name,'pk'=>$pk)));
     }
